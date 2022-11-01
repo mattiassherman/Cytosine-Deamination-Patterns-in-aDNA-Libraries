@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{bash}
+# Human Reference Genome Download and Indexing
+
+# The reference genome used in my paper, hg19, can be downloaded from this link: 
+
+# Software requirements
+# BWA (https://github.com/lh3/bwa)
+# samtools (http://www.htslib.org/download/)
+
+# Variables
+read 'reference_genome_name'
+read 'reference_genome_link'
+
+# Downloading the reference genome
+mkdir reference_genome
+wget -O <reference_genome_name> -P reference_genome/ <reference_genome_link>
+
+# Indexing the reference genome using bwa and samtools
+bwa index reference_genome/<reference_genome_name>
+samtools faidx reference_genome/<reference_genome_name>
+```
+
+
+
+
+

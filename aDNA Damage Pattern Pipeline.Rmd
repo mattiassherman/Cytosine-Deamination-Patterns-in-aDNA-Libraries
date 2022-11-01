@@ -1,0 +1,54 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{bash}
+# aDNA Damage Pattern Pipeline
+
+# To download and index the reference genome, see second file (Human Reference Genome Download and Indexing).
+
+# Software requirements
+# AdapterRemoval v2	(https://github.com/mikkelschubert/adapterremoval)
+# FastQC (https://github.com/s-andrews/FastQC)
+# BWA (https://github.com/lh3/bwa)
+# samtools (http://www.htslib.org/download/)
+# Dedup (https://github.com/apeltzer/DeDup)
+# MapDamage (https://github.com/ginolhac/mapDamage)
+
+# Pipeline Variable
+read 'fastq_file_link'
+read 'fastq_file_name'
+read 'data_name'
+read 'reference_genome_name'
+read nthreads
+
+# Creating folders
+mkdir -p 1_data 2_trimmed_merged 3_quality_control 4_mapping 5_aDNA_characteristics
+
+# Downloading Data
+wget -O $fastq_file_name -P 1_data/ $fastq_file_link
+
+# Trimming and Merging
+AdapterRemoval --file1 1_data/$fastq_file_name --basename 2_trimmed_merged/$data_name --collapse --gzip --threads $nthreads
+
+# Quality Control
+fastqc -o 3_quality_control/ -t $nthreads 2_trimmed_merged/$data_name.collapsed.gz 2_trimmed_merged/$data_name.pair1.truncated.gz 2_trimmed_merged/$data_name.pair2.truncated.gz 
+
+# Mapping
+bwa aln -l 1024 -f 4_mapping/$data_name.collapsed.sai -t $nthreads reference_genome/$reference_genome_name 2_trimmed_merged/$data_name.collapsed.gz
+bwa samse -r @RG\\tID:sample1\\tSM:sample1 -f 4_mapping/$data_name.collapsed.sam reference_genome/$reference_genome_name 4_mapping/$data_name.collapsed.sai 2_trimmed_merged/$data_name.collapsed.gz
+samtools flagstat -@ $nthreads 4_mapping/$data_name.collapsed.sam > 4_mapping/$data_name.collapsed.stats
+cat 4_mapping/$data_name.collapsed.stats
+samtools view -@ $nthreads -Sb -h -F 4 -o 4_mapping/$data_name.mapped.bam 4_mapping/$data_name.collapsed.sam
+rm 4_mapping/$data_name.collapsed.sam
+samtools sort -@ $nthreads -o 4_mapping/$data_name.mapped.sorted.bam 4_mapping/$data_name.mapped.bam
+rm 4_mapping/$data_name.mapped.bam
+
+# Removing Duplicates
+dedup -i 4_mapping/$data_name.mapped.sorted.bam -m -o 4_mapping/
+
+# Assessing Ancient DNA properties
+samtools index 4_mapping/$data_name.mapped.sorted_rmdup.bam
+mapDamage -i 4_mapping/$data_name.mapped.sorted_rmdup.bam -r reference_genome/$reference_genome_name --no-stats -y 0.30 -d 5_aDNA_characteristics
+```
