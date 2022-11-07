@@ -1,7 +1,7 @@
 ```{bash}
 # aDNA Damage Pattern Pipeline
 
-# To download and index the reference genome, see second file (Human Reference Genome Download and Indexing).
+# To download and index the reference genome, see "Human Reference Genome Download and Indexing" bash script.
 
 # Software requirements
 # AdapterRemoval v2	(https://github.com/mikkelschubert/adapterremoval)
